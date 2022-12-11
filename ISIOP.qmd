@@ -1,0 +1,386 @@
+---
+title: "ISIOP"
+subtitle: "AIPlan4EU project"
+params:
+    ID: 2771
+author:
+- name: "PhD Dejan Mircetic and PhD Slobodan Ilic"
+  affiliation: "The AI Institute of Serbia"
+date: "`r format(Sys.time(), '%d %B %Y')`"
+editor: visual
+format:
+  html:
+    toc: true
+    number-sections: true
+    code-fold: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE) #stavi false ako neces kod da se vidi.
+library(readxl)
+library(tidyverse)
+library(tsibble)
+library(lubridate)
+library(fable)
+library(thief)
+library(fpp3)
+#library(tsfeatures)
+library(feasts)
+library(GGally)
+library(fabletools)
+
+time_0<-Sys.time()
+
+```
+
+This project is joint work of [IVI](https://www.ivi.ac.rs/)researches:
+
+* PhD [Dejan Mircetic](https://www.linkedin.com/feed/update/urn:li:activity:6993199240374050816/)
+* PhD [Slobodan Ilic](https://www.linkedin.com/posts/ai-institute-serbia_computervision-meet-ouriaicrew-activity-6965975239239311360-i4UL?utm_source=share&utm_medium=member_desktop).
+
+## Data import
+
+```{r, message=FALSE, cache=TRUE}
+
+podaci <- read_excel("1. podaci/Garden 5 godina.xlsx")
+#View(podaci)
+#dim(podaci)
+
+colnames(podaci)[1] <- "product_ID"
+
+#transforming to tidystyle
+df <- podaci %>%
+    pivot_longer(!product_ID, names_to = "date", values_to = "count")
+
+#replacing NA to 0
+df <- df %>% 
+  replace(is.na(.), 0) %>%
+  select(date, product_ID, count)
+
+df <- df %>% mutate(product_ID=as.factor(product_ID),date=dmy(date))
+
+# df %>% 
+#   duplicates(key = c(product_ID), index=date) %>%
+#   group_by(date, product_ID) %>% 
+#   summarise(value=sum(count))
+
+df_tsb <- df %>%
+  as_tsibble(key =  c(product_ID), index=date) %>%
+  fill_gaps(count = 0L)
+```
+
+## Autoploting
+
+Za izvještaj napravi neki klasifikator na osnovu čega si sortirao podatke kako bi razdvojio serije na kontinualne i isprekidane.
+
+Ubaciti i neku matematicku formulu za izvještaj.
+
+```{r, message=FALSE}
+df_tsb %>%
+  filter(product_ID==params$ID) %>%
+  index_by(month = yearmonth(date)) %>%
+  summarise(Consumption = sum(count)) %>%
+  autoplot(Consumption)+
+  ggtitle("Fig 1. Visualisation customers consumption")
+
+#325 ranije proizvod
+# distinct(df_tsb,product_ID)
+
+df_tsb %>%
+  filter(product_ID==params$ID) %>%
+  index_by(month = yearmonth(date)) %>%
+  summarise(Consumption = sum(count)) %>%
+  gg_subseries(Consumption, labels = "both")+
+  ggtitle("Fig 2. Seasonal consumption")+
+  theme_bw()
+
+df_tsb %>%
+  filter(product_ID==params$ID) %>%
+  index_by(month = yearmonth(date)) %>%
+  summarise(Consumption = sum(count)) %>%
+  gg_season(Consumption, labels = "both")+
+  ggtitle("Fig 2. Seasonal consumption")+
+  theme_bw()
+
+df_tsb %>%
+  filter(product_ID==params$ID) %>%
+  index_by(month = yearmonth(date)) %>%
+  summarise(Consumption = sum(count)) %>%
+  model(
+    STL(Consumption ~ trend(window = 7) +
+          season(window = "periodic"),
+        robust = TRUE)) %>%
+  components() %>%
+  autoplot(Consumption)
+
+#tsaggregiranje
+series <- df_tsb %>%
+  filter(product_ID==params$ID) %>%
+  index_by(month = yearmonth(date)) %>%
+  summarise(Consumption = sum(count))
+
+series_ts <- ts(series$Consumption,start = c(2017,1), frequency = 12)
+plot(tsaggregates(series_ts,align = "end"))
+```
+
+## Kalifikovanje serija
+
+U ovom dijelu je potrebno da smisliš neki klasifikator koji će klasifikovati serije, prema osobinama kako bi ih razdvojio na kontinualne i isprekidane.
+
+Smisli nesto ili pogledaj u knjizi kod Arisa...Kad budes imao vremena definitivno pogledaj kod Arisa, jer možda imaš serije koje imaju nule a mogu da se koriste kontinualni modelni.
+
+```{r, eval=TRUE}
+#Klasifikacija za pojedinacne serije
+
+df_month <- df_tsb %>%
+  index_by(month = yearmonth(date)) %>%
+  group_by(product_ID) %>%
+  summarise(Consumption = sum(count))
+
+contin <- as_tibble(df_month) %>%
+          group_by(product_ID) %>%
+          summarize(label=any(Consumption==0)) %>%
+        # mutate(label= ifelse(label==TRUE,"intermittent","continuous")) #može i ovako
+          filter(label!=TRUE)
+
+df_month %>%
+  mutate(label= ifelse(product_ID %in% contin$product_ID, "continuous", "intermittent")) %>%
+  filter(label=="continuous") -> forecasting_con
+
+#####
+#Sad ovdje nastavi kod za kontinijus prognoze
+train <- forecasting_con %>%
+  #filter(product_ID %in% c("325","440")) %>%
+  filter(month <= yearmonth("2021 Apr"))
+
+test <- forecasting_con %>%
+  #filter(product_ID %in% c("325","440")) %>%
+  filter(month <= yearmonth("2021 Dec"))
+#####
+```
+
+#Forcasts of continuous series
+
+```{r prognoziranje, cache=FALSE}
+
+fit <- train %>%
+  model(
+    #neural = NNETAR(Consumption),
+    #average = MEAN(),
+    #naive = NAIVE(Consumption~ lag(1)),
+    s_naive = SNAIVE(Consumption~ lag(12)),
+    ets = ETS(Consumption),
+    #theta = THETA(Consumption),
+    #ar = AR(),
+    #var = VAR(),
+    arima = ARIMA(Consumption),
+  ) %>%
+  mutate(
+    #comb1 = (ets + theta + arima) / 3,
+    comb1 = (ets + arima) / 2)
+  
+fh <- fit %>% fabletools::forecast(h = 8)
+```
+
+```{r}
+
+  fh %>%
+    filter(product_ID==params$ID) %>% autoplot(test, level=NULL) #najbolje hvata pa je uzet kao primjer za sukcesivno prognoziranje.
+
+  fh %>%
+  #filter(is_aggregated(curing)) %>%
+  fabletools::accuracy(
+    data = test,
+    measures = list(measures = list(
+                           point_accuracy_measures,
+                           interval_accuracy_measures,
+                           distribution_accuracy_measures
+                         ))
+  ) %>%
+  group_by(.model) %>%
+  summarise(mape=mean(MAPE, rm.na=TRUE),rmse = mean(RMSE,rm.na=TRUE),rmsse = mean(RMSSE,rm.na=TRUE), mase = mean(MASE,rm.na=TRUE)) %>%
+  arrange(rmsse)
+
+  fh %>%
+    filter(product_ID==2773 & .model != "s_naive") %>% autoplot(test, level=NULL) #najbolje hvata pa je uzet kao primjer za sukcesivno prognoziranje.
+```
+
+## Sukcesivno treniranje
+
+## Cross Validacija
+
+```{r}
+
+#cros validacija
+
+#serija <- 2773
+#serija <- 6650
+serija <- 7999
+#serija <- 445
+
+cv_train <- train %>%
+    filter(product_ID==serija) %>%
+    stretch_tsibble(.init = 12, .step = 12)
+cv_train
+
+fc <- cv_train %>%
+  model(
+    #neural = NNETAR(Consumption),
+    #average = MEAN(),
+    #naive = NAIVE(Consumption~ lag(1)),
+    s_naive = SNAIVE(Consumption~ lag(12)),
+    ets = ETS(Consumption),
+    #theta = THETA(Consumption),
+    #ar = AR(),
+    #var = VAR(),
+    arima = ARIMA(Consumption),
+  ) %>%
+  mutate(
+    #comb1 = (ets + theta + arima) / 3,
+    comb1 = (ets + arima) / 2) %>% 
+  fabletools::forecast(h = 12) %>%
+  group_by(.id,.model) %>%
+  mutate(h = row_number()) %>%
+  ungroup() %>%
+  as_fable(response = "Consumption", distribution = Consumption)
+
+t2 <- test %>%
+    filter(product_ID==serija)
+
+fc %>%
+  fabletools::accuracy(t2, by = c("h", ".model")) %>%
+  ggplot(aes(x = h, y = RMSSE, group=.model, colour=.model)) +
+  geom_point()+
+  geom_line()
+
+
+fc %>%
+  fabletools::accuracy(t2) %>%
+  arrange(RMSSE)
+
+
+mod <- fc %>%
+  fabletools::accuracy(t2) %>%
+  arrange(RMSSE)%>%
+  summarise(first(.model))
+
+#Greske po periodima za najbolji model
+fc %>%
+  fabletools::accuracy(t2, by = c("h", ".model")) %>%
+  filter(.model==mod$`first(.model)`)
+
+#The most accurate model according to the RMSSE
+fc %>%
+  filter(.model==mod$`first(.model)`) %>%
+  autoplot(colour="red")+theme_bw() +
+  ggtitle("Total consumption & forecasts")+
+  xlab("Months")
+
+```
+
+## Plot the best
+
+```{r}
+fc %>%
+  filter(.model==mod$`first(.model)`) %>%
+  autoplot(cv_train, colour="red")+theme_bw() +
+  ggtitle("Agromarket product demand & roling forecasts")+
+  xlab("Months")
+
+cv_test <- t2 %>%
+  filter(product_ID==serija) %>%
+  select(!product_ID) %>%
+  stretch_tsibble(.init = 24, .step = 12)
+
+fc %>%
+  select(!product_ID) %>%
+  filter(.model=="comb1") %>%
+  autoplot(cv_test, colour="red")+theme_bw() +
+  ggtitle("Agromarket product demand & roling forecasts")+
+  xlab("Months")
+
+# Da sklonis tekst mogao si i ovo koristiti
+fc %>%
+  select(!product_ID) %>%
+  filter(.model=="comb1") %>%
+  autoplot(cv_test, colour="red")+theme_bw() +
+  ggtitle("Agromarket product demand & roling forecasts")+
+  xlab("Months")+
+  theme(strip.text=element_blank())
+
+fc %>%
+    select(!product_ID) %>%
+    filter(.model=="comb1") %>%
+    autoplot(cv_test, colour="red")+theme_bw() +
+    ggtitle("Agromarket product demand & roling forecasts")+
+    xlab("Time")+
+    theme(axis.text.y=element_blank(),
+          axis.text.x=element_blank(),
+          axis.ticks=element_blank(),
+          strip.text=element_blank())
+```
+
+## Intermittent
+
+```{r, eval=FALSE}
+
+df_month %>%
+  mutate(label= ifelse(product_ID %in% contin$product_ID, "continuous", "intermittent")) %>%
+  filter(label=="intermittent")
+
+#Sad ovdje nastavi kod za intermittent prognoze
+
+```
+
+## Time series features
+
+```{r features, message=FALSE, warning=FALSE, cache=TRUE, eval=TRUE}
+
+# https://ggobi.github.io/ggally/articles/ggpairs.html
+
+#pairs(features)
+
+# pm <- ggpairs(measurments, columns = c(2:7))
+# pm
+
+df_month_all <- df_month %>%
+  mutate(label= ifelse(product_ID %in% contin$product_ID, "continuous", "intermittent"))
+
+agro_features <- df_month_all %>%
+    features(Consumption, list(mean = mean, sd=sd, feature_set(pkgs = "feasts")))
+
+measurments <- agro_features %>%
+    mutate(product_class = ifelse(product_ID %in% contin$product_ID, "continuous", "intermittent")) %>%
+    mutate(product_class = as.factor(product_class)) %>%
+    mutate(coeff_of_var=sd/mean)
+
+```
+
+## Summary statistics
+
+```{r}
+#sumirane karatkersitike
+
+statistika <- measurments %>%
+  select("coeff_of_var", "trend_strength", "seasonal_strength_year", "seasonal_peak_year","seasonal_trough_year","mean","sd","acf1")
+
+#summary(statistika)
+
+knitr::kable(summary(statistika),"pipe")
+
+```
+
+## Plot the features
+
+```{r plot_features, message=FALSE, eval=TRUE}
+
+pm <- ggpairs(measurments, columns = c("coeff_of_var", "trend_strength", "seasonal_strength_year", "seasonal_peak_year","seasonal_trough_year","acf1", "lambda_guerrero", "product_class"), mapping = aes(color = product_class), upper = list(continuous = "density"))
+pm + theme_bw()
+```
+
+# Execution time
+
+```{r time}
+time_1<-Sys.time()
+time_1-time_0
+```

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.1.189">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="PhD Dejan Mircetic and PhD Slobodan Ilic">
+<meta name="dcterms.date" content="2022-12-11">
+
+<title>ISIOP</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="ISIOP_files/libs/clipboard/clipboard.min.js"></script>
+<script src="ISIOP_files/libs/quarto-html/quarto.js"></script>
+<script src="ISIOP_files/libs/quarto-html/popper.min.js"></script>
+<script src="ISIOP_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="ISIOP_files/libs/quarto-html/anchor.min.js"></script>
+<link href="ISIOP_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="ISIOP_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="ISIOP_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="ISIOP_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="ISIOP_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#data-import" id="toc-data-import" class="nav-link active" data-scroll-target="#data-import"><span class="toc-section-number">0.1</span>  Data import</a></li>
+  <li><a href="#autoploting" id="toc-autoploting" class="nav-link" data-scroll-target="#autoploting"><span class="toc-section-number">0.2</span>  Autoploting</a></li>
+  <li><a href="#kalifikovanje-serija" id="toc-kalifikovanje-serija" class="nav-link" data-scroll-target="#kalifikovanje-serija"><span class="toc-section-number">0.3</span>  Kalifikovanje serija</a></li>
+  <li><a href="#sukcesivno-treniranje" id="toc-sukcesivno-treniranje" class="nav-link" data-scroll-target="#sukcesivno-treniranje"><span class="toc-section-number">0.4</span>  Sukcesivno treniranje</a></li>
+  <li><a href="#cross-validacija" id="toc-cross-validacija" class="nav-link" data-scroll-target="#cross-validacija"><span class="toc-section-number">0.5</span>  Cross Validacija</a></li>
+  <li><a href="#plot-the-best" id="toc-plot-the-best" class="nav-link" data-scroll-target="#plot-the-best"><span class="toc-section-number">0.6</span>  Plot the best</a></li>
+  <li><a href="#intermittent" id="toc-intermittent" class="nav-link" data-scroll-target="#intermittent"><span class="toc-section-number">0.7</span>  Intermittent</a></li>
+  <li><a href="#time-series-features" id="toc-time-series-features" class="nav-link" data-scroll-target="#time-series-features"><span class="toc-section-number">0.8</span>  Time series features</a></li>
+  <li><a href="#summary-statistics" id="toc-summary-statistics" class="nav-link" data-scroll-target="#summary-statistics"><span class="toc-section-number">0.9</span>  Summary statistics</a></li>
+  <li><a href="#plot-the-features" id="toc-plot-the-features" class="nav-link" data-scroll-target="#plot-the-features"><span class="toc-section-number">0.10</span>  Plot the features</a></li>
+  <li><a href="#execution-time" id="toc-execution-time" class="nav-link" data-scroll-target="#execution-time"><span class="toc-section-number">1</span>  Execution time</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ISIOP</h1>
+<p class="subtitle lead">AIPlan4EU project</p>
+</div>
+
+
+<div class="quarto-title-meta-author">
+  <div class="quarto-title-meta-heading">Author</div>
+  <div class="quarto-title-meta-heading">Affiliation</div>
+  
+    <div class="quarto-title-meta-contents">
+    PhD Dejan Mircetic and PhD Slobodan Ilic 
+  </div>
+    <div class="quarto-title-meta-contents">
+        <p class="affiliation">
+            The AI Institute of Serbia
+          </p>
+      </div>
+    </div>
+
+<div class="quarto-title-meta">
+
+      
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">December 11, 2022</p>
+    </div>
+  </div>
+    
+  </div>
+  
+
+</header>
+
+<p>This project is joint work of <a href="https://www.ivi.ac.rs/">IVI</a>researches: * PhD <a href="https://www.linkedin.com/feed/update/urn:li:activity:6993199240374050816/">Dejan Mircetic</a> * PhD <a href="https://www.linkedin.com/posts/ai-institute-serbia_computervision-meet-ouriaicrew-activity-6965975239239311360-i4UL?utm_source=share&amp;utm_medium=member_desktop">Slobodan Ilic</a>.</p>
+<section id="data-import" class="level2" data-number="0.1">
+<h2 data-number="0.1" class="anchored" data-anchor-id="data-import"><span class="header-section-number">0.1</span> Data import</h2>
+<div class="cell" data-hash="ISIOP_cache/html/unnamed-chunk-1_4b199741ea79bbaf5638388fc305ad73">
+
+</div>
+</section>
+<section id="autoploting" class="level2" data-number="0.2">
+<h2 data-number="0.2" class="anchored" data-anchor-id="autoploting"><span class="header-section-number">0.2</span> Autoploting</h2>
+<p>Za izvještaj napravi neki klasifikator na osnovu čega si sortirao podatke kako bi razdvojio serije na kontinualne i isprekidane.</p>
+<p>Ubaciti i neku matematicku formulu za izvještaj.</p>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in geom_line(...): Ignoring unknown parameters: `labels`</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-2-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-2-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-2-4.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-2-5.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="kalifikovanje-serija" class="level2" data-number="0.3">
+<h2 data-number="0.3" class="anchored" data-anchor-id="kalifikovanje-serija"><span class="header-section-number">0.3</span> Kalifikovanje serija</h2>
+<p>U ovom dijelu je potrebno da smisliš neki klasifikator koji će klasifikovati serije, prema osobinama kako bi ih razdvojio na kontinualne i isprekidane.</p>
+<p>Smisli nesto ili pogledaj u knjizi kod Arisa…Kad budes imao vremena definitivno pogledaj kod Arisa, jer možda imaš serije koje imaju nule a mogu da se koriste kontinualni modelni.</p>
+<div class="cell">
+
+</div>
+<p>#Forcasts of continuous series</p>
+<div class="cell">
+
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Outer names are only allowed for unnamed scalar atomic inputs</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 5
+  .model   mape  rmse rmsse  mase
+  &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+1 comb1    303.  611. 0.783 0.908
+2 arima    326.  633. 0.800 0.933
+3 ets      286.  622. 0.831 0.939
+4 s_naive  262.  727. 0.943 1.04 </code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-4-2.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="sukcesivno-treniranje" class="level2" data-number="0.4">
+<h2 data-number="0.4" class="anchored" data-anchor-id="sukcesivno-treniranje"><span class="header-section-number">0.4</span> Sukcesivno treniranje</h2>
+</section>
+<section id="cross-validacija" class="level2" data-number="0.5">
+<h2 data-number="0.5" class="anchored" data-anchor-id="cross-validacija"><span class="header-section-number">0.5</span> Cross Validacija</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tsibble: 120 x 5 [1M]
+# Key:       .id, product_ID [4]
+   product_ID    month Consumption label        .id
+   &lt;fct&gt;         &lt;mth&gt;       &lt;dbl&gt; &lt;chr&gt;      &lt;int&gt;
+ 1 7999       2017 Jan         243 continuous     1
+ 2 7999       2017 Feb         243 continuous     1
+ 3 7999       2017 Mar        1710 continuous     1
+ 4 7999       2017 Apr        1110 continuous     1
+ 5 7999       2017 May         329 continuous     1
+ 6 7999       2017 Jun         497 continuous     1
+ 7 7999       2017 Jul         380 continuous     1
+ 8 7999       2017 Aug         499 continuous     1
+ 9 7999       2017 Sep         555 continuous     1
+10 7999       2017 Oct         448 continuous     1
+# … with 110 more rows</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 11
+  .model  product_ID .type    ME  RMSE   MAE   MPE  MAPE  MASE RMSSE    ACF1
+  &lt;chr&gt;   &lt;fct&gt;      &lt;chr&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+1 comb1   7999       Test   56.5  400.  277. -312.  343. 0.911 0.974  0.0627
+2 arima   7999       Test   61.3  408.  284. -289.  322. 0.934 0.993  0.0894
+3 ets     7999       Test   51.7  410.  288. -335.  366. 0.948 0.999  0.0216
+4 s_naive 7999       Test   48.6  461.  322. -474.  517. 1.06  1.12  -0.0905</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 11
+       h .model .type     ME  RMSE   MAE       MPE   MAPE  MASE RMSSE    ACF1
+   &lt;int&gt; &lt;chr&gt;  &lt;chr&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;     &lt;dbl&gt;  &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt;
+ 1     1 comb1  Test  -106.   363.  321. -3425.    3451.  1.06  0.883 -0.693 
+ 2     2 comb1  Test    91.2  232.  145.     5.57    16.8 0.453 0.538 -0.479 
+ 3     3 comb1  Test   530.   648.  530.    36.8     36.8 1.69  1.52   0.0738
+ 4     4 comb1  Test   285.   842.  538.   -18.0     56.9 1.73  2.00   0.0157
+ 5     5 comb1  Test    20.0  223.  219.    -8.31    41.4 0.632 0.452 -0.242 
+ 6     6 comb1  Test  -123.   235.  186.   -99.0    111.  0.541 0.482 -0.433 
+ 7     7 comb1  Test   312.   525.  455.     8.40    50.7 1.32  1.08  -0.765 
+ 8     8 comb1  Test    13.3  198.  196.    -9.09    38.1 0.564 0.407  0.291 
+ 9     9 comb1  Test   -65.8  137.  111.   -18.3     25.9 0.326 0.285 -0.475 
+10    10 comb1  Test    27.2  145.  134.     0.390   21.0 0.397 0.306  0.181 
+11    11 comb1  Test   -70.2  183.  171.   -24.3     37.7 0.517 0.389 -0.345 
+12    12 comb1  Test  -236.   340.  315.  -197.     225.  0.971 0.731  0.0740</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-5-2.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="plot-the-best" class="level2" data-number="0.6">
+<h2 data-number="0.6" class="anchored" data-anchor-id="plot-the-best"><span class="header-section-number">0.6</span> Plot the best</h2>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-6-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-6-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-6-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/unnamed-chunk-6-4.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="intermittent" class="level2" data-number="0.7">
+<h2 data-number="0.7" class="anchored" data-anchor-id="intermittent"><span class="header-section-number">0.7</span> Intermittent</h2>
+<div class="cell">
+
+</div>
+</section>
+<section id="time-series-features" class="level2" data-number="0.8">
+<h2 data-number="0.8" class="anchored" data-anchor-id="time-series-features"><span class="header-section-number">0.8</span> Time series features</h2>
+<div class="cell" data-hash="ISIOP_cache/html/features_0a95fb248086c4c07c8bc26d6c532ce5">
+
+</div>
+</section>
+<section id="summary-statistics" class="level2" data-number="0.9">
+<h2 data-number="0.9" class="anchored" data-anchor-id="summary-statistics"><span class="header-section-number">0.9</span> Summary statistics</h2>
+<div class="cell">
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 2%">
+<col style="width: 10%">
+<col style="width: 10%">
+<col style="width: 15%">
+<col style="width: 12%">
+<col style="width: 14%">
+<col style="width: 11%">
+<col style="width: 12%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"></th>
+<th style="text-align: left;">coeff_of_var</th>
+<th style="text-align: left;">trend_strength</th>
+<th style="text-align: left;">seasonal_strength_year</th>
+<th style="text-align: left;">seasonal_peak_year</th>
+<th style="text-align: left;">seasonal_trough_year</th>
+<th style="text-align: left;">mean</th>
+<th style="text-align: left;">sd</th>
+<th style="text-align: left;">acf1</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Min. :0.3235</td>
+<td style="text-align: left;">Min. :0.0000</td>
+<td style="text-align: left;">Min. :0.1328</td>
+<td style="text-align: left;">Min. : 0.00</td>
+<td style="text-align: left;">Min. : 0.000</td>
+<td style="text-align: left;">Min. : 0.02</td>
+<td style="text-align: left;">Min. : 0.129</td>
+<td style="text-align: left;">Min. :-0.24649</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">1st Qu.:1.7851</td>
+<td style="text-align: left;">1st Qu.:0.1176</td>
+<td style="text-align: left;">1st Qu.:0.2345</td>
+<td style="text-align: left;">1st Qu.: 3.00</td>
+<td style="text-align: left;">1st Qu.: 0.000</td>
+<td style="text-align: left;">1st Qu.: 0.43</td>
+<td style="text-align: left;">1st Qu.: 1.514</td>
+<td style="text-align: left;">1st Qu.:-0.01723</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Median :2.7360</td>
+<td style="text-align: left;">Median :0.1856</td>
+<td style="text-align: left;">Median :0.3022</td>
+<td style="text-align: left;">Median : 4.00</td>
+<td style="text-align: left;">Median : 1.000</td>
+<td style="text-align: left;">Median : 4.59</td>
+<td style="text-align: left;">Median : 11.971</td>
+<td style="text-align: left;">Median : 0.13509</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Mean :3.2845</td>
+<td style="text-align: left;">Mean :0.2277</td>
+<td style="text-align: left;">Mean :0.3338</td>
+<td style="text-align: left;">Mean : 4.89</td>
+<td style="text-align: left;">Mean : 3.845</td>
+<td style="text-align: left;">Mean : 85.35</td>
+<td style="text-align: left;">Mean : 104.720</td>
+<td style="text-align: left;">Mean : 0.18669</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">3rd Qu.:4.4019</td>
+<td style="text-align: left;">3rd Qu.:0.2996</td>
+<td style="text-align: left;">3rd Qu.:0.3865</td>
+<td style="text-align: left;">3rd Qu.: 7.00</td>
+<td style="text-align: left;">3rd Qu.: 8.000</td>
+<td style="text-align: left;">3rd Qu.: 24.65</td>
+<td style="text-align: left;">3rd Qu.: 53.363</td>
+<td style="text-align: left;">3rd Qu.: 0.36087</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"></td>
+<td style="text-align: left;">Max. :7.7460</td>
+<td style="text-align: left;">Max. :0.8592</td>
+<td style="text-align: left;">Max. :0.8963</td>
+<td style="text-align: left;">Max. :11.00</td>
+<td style="text-align: left;">Max. :11.000</td>
+<td style="text-align: left;">Max. :31981.07</td>
+<td style="text-align: left;">Max. :20535.962</td>
+<td style="text-align: left;">Max. : 0.83597</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<section id="plot-the-features" class="level2" data-number="0.10">
+<h2 data-number="0.10" class="anchored" data-anchor-id="plot-the-features"><span class="header-section-number">0.10</span> Plot the features</h2>
+<div class="cell">
+<div class="cell-output-display">
+<p><img src="ISIOP_files/figure-html/plot_features-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="execution-time" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Execution time</h1>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code>Time difference of 17.51497 mins</code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
