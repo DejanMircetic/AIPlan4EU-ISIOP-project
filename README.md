@@ -1,6 +1,6 @@
 # AIPlan4EU
 
-![](2. pics/front.png)
+![](front.png)
 
 
 **INTELLIGENT SALES, INVENTORY AND OPERATIONS PLANNING - ISIOP project**, represents the winning project in the *1st Open-call for innovators submitted in Track B*, for the cascadilly funded **Horizon 2020** project [AIPlan4EU](https://www.aiplan4eu-project.eu/).
@@ -20,4 +20,4 @@ There is a lot of job in front of us (*three Sprints + Demo*), let's get do it. 
 
 # Sprint 1 findings...
 
-![Fig 1. Products statistical characteristics.](2. pics/Fig1.png) 
+![Fig 1. Products statistical characteristics.](Fig1.png) 
