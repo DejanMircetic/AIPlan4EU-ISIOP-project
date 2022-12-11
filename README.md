@@ -1,9 +1,9 @@
-# [AIPlan4EU](https://www.aiplan4eu-project.eu/)
+# AIPlan4EU
 
 ![](2. pics/front.png)
 
 
-**INTELLIGENT SALES, INVENTORY AND OPERATIONS PLANNING - ISIOP project**, represents the winning project in the *1st Open-call for innovators submitted in Track B*, for the cascadilly funded **Horizon 2020** project **AIPlan4EU**.
+**INTELLIGENT SALES, INVENTORY AND OPERATIONS PLANNING - ISIOP project**, represents the winning project in the *1st Open-call for innovators submitted in Track B*, for the cascadilly funded **Horizon 2020** project [AIPlan4EU](https://www.aiplan4eu-project.eu/).
 
 Lead researches:
 
